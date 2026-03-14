@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thin Film Optics Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── RESET & BASE ─────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg0:#070d1c;--bg1:#0b1427;--bg2:#0c1829;--bg3:#0a1525;
+  --bd:#1a2e4a;--bd2:#1e3a5f;
+  --tx0:#e2f4ff;--tx1:#c4d8f0;--tx2:#8ab8d8;--tx3:#4a7090;
+  --acc:#22d3ee;--grn:#4ade80;--org:#fb923c;--pnk:#f472b6;--red:#f87171;--yel:#fde047;
+  --r5:5px;--r6:6px;--r8:8px;
+}
+body{font-family:'Courier New',monospace;background:var(--bg0);color:var(--tx1);min-height:100vh;font-size:13px;line-height:1.5;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg1);}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+
+/* ── LAYOUT ───────────────────────────────────────── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.hdr{background:var(--bg1);border-bottom:1px solid var(--bd);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+.logo{width:32px;height:32px;border-radius:var(--r6);background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--bg0);font-weight:700;flex-shrink:0;}
+.hdr-title{font-size:15px;font-weight:700;color:var(--tx0);letter-spacing:.08em;}
+.hdr-sub{font-size:10px;color:var(--tx3);letter-spacing:.14em;margin-top:1px;}
+.hdr-info{margin-left:auto;font-size:11px;color:var(--tx3);}
+
+.tabbar{background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;padding:0 20px;flex-shrink:0;}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);padding:10px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.12em;transition:.15s;font-family:inherit;}
+.tab:hover{color:var(--tx2);}
+.tab.act{color:var(--acc);border-bottom-color:var(--acc);}
+
+.body{flex:1;overflow-y:auto;padding:16px 20px;display:none;}
+.body.act{display:block;}
+
+/* ── PANEL ────────────────────────────────────────── */
+.panel{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r8);padding:14px 16px;margin-bottom:12px;}
+.panel-hdr{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--tx3);margin-bottom:10px;text-transform:uppercase;}
+
+/* ── GRID ─────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:220px 1fr;gap:12px;}
+.g2c{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3c{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.col{display:flex;flex-direction:column;gap:10px;}
+.row{display:flex;gap:8px;align-items:center;}
+
+/* ── FORM ─────────────────────────────────────────── */
+label{font-size:11px;color:var(--tx3);display:block;margin-bottom:4px;}
+input,select,textarea{
+  background:var(--bg3);color:var(--tx1);border:1px solid var(--bd);border-radius:var(--r5);
+  padding:6px 10px;font-size:12px;width:100%;outline:none;font-family:'Courier New',monospace;
+  transition:.15s;
+}
+input:focus,select:focus,textarea:focus{border-color:rgba(34,211,238,.5);}
+textarea{resize:vertical;line-height:1.6;}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-inner-spin-button{opacity:.4;}
+input[type=radio]{width:auto;accent-color:var(--acc);}
+select option{background:var(--bg2);}
+
+/* ── BUTTONS ──────────────────────────────────────── */
+.btn{border:1px solid;border-radius:var(--r5);padding:5px 12px;cursor:pointer;font-size:12px;font-weight:700;transition:.15s;font-family:'Courier New',monospace;white-space:nowrap;letter-spacing:.04em;}
+.btn:hover{filter:brightness(1.2);}
+.btn:active{transform:scale(.97);}
+.btn-c{background:#0e2a3f;color:var(--acc);border-color:rgba(34,211,238,.4);}
+.btn-g{background:#0e2d1e;color:var(--grn);border-color:rgba(74,222,128,.4);}
+.btn-r{background:#2d1010;color:var(--red);border-color:rgba(248,113,113,.4);}
+.btn-y{background:#1f1a08;color:var(--yel);border-color:rgba(253,224,71,.4);}
+.btn-n{background:var(--bg3);color:var(--tx3);border-color:var(--bd);}
+.btn-sm{padding:3px 8px;font-size:11px;}
+.btn-run{
+  background:rgba(34,211,238,.12);color:var(--acc);border:1px solid var(--acc);
+  border-radius:var(--r6);padding:12px 32px;font-size:15px;font-weight:700;cursor:pointer;
+  letter-spacing:.08em;transition:.2s;width:100%;font-family:'Courier New',monospace;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-run:hover{background:rgba(34,211,238,.22);}
+.btn-run:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ── MISC UI ──────────────────────────────────────── */
+.sep{height:1px;background:var(--bd);margin:10px 0;}
+.mono{font-family:'Courier New',monospace;}
+.badge{font-size:10px;padding:2px 7px;border-radius:3px;font-weight:700;font-family:'Courier New',monospace;}
+.badge-dim{background:#102030;color:var(--tx3);}
+.tag{display:inline-flex;align-items:center;gap:6px;background:#0e2233;border:1px solid #1e4060;border-radius:4px;padding:3px 9px;font-size:11px;color:var(--acc);font-family:'Courier New',monospace;}
+.tag-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;line-height:1;padding:0;margin-left:2px;}
+.tag-del:hover{color:var(--red);}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;}
+.pill{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.err{color:var(--red);font-size:11px;margin-top:4px;}
+.ok{color:var(--grn);font-size:11px;}
+.hint{font-size:11px;color:var(--tx3);line-height:1.6;}
+.stat{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r6);padding:10px 14px;text-align:center;}
+.stat-lbl{font-size:10px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;}
+.stat-val{font-size:20px;font-weight:700;font-family:'Courier New',monospace;margin-top:4px;color:var(--acc);}
+
+/* ── MATERIAL LIST ────────────────────────────────── */
+.mat-item{padding:7px 10px;border-radius:var(--r5);cursor:pointer;transition:.1s;border:1px solid transparent;margin-bottom:2px;}
+.mat-item:hover{background:rgba(255,255,255,.04);}
+.mat-item.sel{background:#112033;border-color:rgba(34,211,238,.3);}
+.mat-name{font-size:12px;color:var(--tx0);font-weight:700;}
+.mat-sym{font-size:10px;color:var(--tx3);}
+
+/* ── TABLE ────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;}
+th{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;}
+td{padding:5px 7px;border-bottom:1px solid rgba(26,46,74,.5);vertical-align:middle;}
+tr:hover td{background:rgba(15,30,51,.3);}
+td input,td select{padding:3px 6px;font-size:12px;}
+
+/* ── CHART ────────────────────────────────────────── */
+.chart-wrap{position:relative;height:320px;width:100%;}
+.chart-wrap canvas{max-height:320px;}
+
+/* ── NO RESULTS ───────────────────────────────────── */
+.no-res{display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;gap:10px;color:var(--tx3);}
+.no-res-ico{font-size:40px;opacity:.25;}
+
+/* ── ANGLE PILLS ──────────────────────────────────── */
+.angle-pill-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+
+/* ── PROGRESS ─────────────────────────────────────── */
+.progress{text-align:center;font-size:11px;color:var(--tx3);margin-top:6px;font-family:'Courier New',monospace;}
+
+/* ── STACK LABELS ─────────────────────────────────── */
+.stack-label{padding:6px 10px;background:var(--bg3);border-radius:var(--r5);font-size:11px;color:var(--tx3);margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="logo">◈</div>
+    <div>
+      <div class="hdr-title">THIN FILM CALC</div>
+      <div class="hdr-sub">OPTICAL INTERFERENCE · TRANSFER MATRIX METHOD</div>
+    </div>
+    <div class="hdr-info" id="hdrInfo">No design loaded</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabbar">
+    <button class="tab act" onclick="switchTab('materials')">01 MATERIALS</button>
+    <button class="tab" onclick="switchTab('design')">02 DESIGN</button>
+    <button class="tab" onclick="switchTab('calculate')">03 CALCULATE</button>
+    <button class="tab" onclick="switchTab('results')">04 RESULTS</button>
+  </div>
+
+  <!-- ═══ TAB: MATERIALS ═════════════════════════════ -->
+  <div class="body act" id="tab-materials">
+    <div class="g2">
+      <div class="col">
+        <div class="panel">
+          <div class="panel-hdr">Material Library</div>
+          <div id="matList"></div>
+          <div class="sep"></div>
+          <div class="row" style="gap:6px">
+            <button class="btn btn-c btn-sm" onclick="addMaterial()">+ New</button>
+            <button class="btn btn-y btn-sm" onclick="dupMaterial()">Duplicate</button>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <div class="row" style="margin-bottom:10px">
+            <div id="matTitle" style="flex:1;font-size:16px;font-weight:700;color:var(--tx0)">—</div>
+            <span class="badge badge-dim" id="matLockedBadge">built-in</span>
+            <button class="btn btn-r btn-sm" id="btnDelMat" onclick="deleteMaterial()" style="display:none">Delete</button>
+          </div>
+          <div class="g3c" style="margin-bottom:12px">
+            <div class="stat"><div class="stat-lbl">n @ 400nm</div><div class="stat-val" id="nAt400">—</div></div>
+            <div class="stat"><div class="stat-lbl">n @ 550nm</div><div class="stat-val" id="nAt550">—</div></div>
+            <div class="stat"><div class="stat-lbl">n @ 700nm</div><div class="stat-val" id="nAt700">—</div></div>
+          </div>
+          <div style="font-size:10px;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.12em">n(λ) Dispersion</div>
+          <div class="chart-wrap" style="height:140px"><canvas id="matChart"></canvas></div>
+          <div class="sep"></div>
+          <div class="row" style="margin-bottom:8px">
+            <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em">Data Table</div>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button class="btn btn-c btn-sm" id="btnEditMat" onclick="toggleEditMat()">Edit Data</button>
+              <button class="btn btn-g btn-sm" id="btnSaveMat" onclick="saveMaterial()" style="display:none">Save</button>
+              <button class="btn btn-n btn-sm" id="btnCancelMat" onclick="cancelEditMat()" style="display:none">Cancel</button>
+            </div>
+          </div>
+          <div id="matDataView"></div>
+          <div id="matDataEdit" style="display:none">
+            <div style="margin-bottom:8px">
+              <label>Material Name</label>
+              <input id="matEditName" type="text">
+            </div>
+            <label>Wavelength / n / k data (one row per wavelength, columns: nm  n  k)</label>
+            <textarea id="matEditTxt" rows="12" placeholder="400    1.460000    0.000000&#10;550    1.455000    0.000000&#10;700    1.450000    0.000000"></textarea>
+            <div id="matEditErr" class="err"></div>
+            <div class="hint" style="margin-top:6px">Format: wavelength(nm) · n · k — separated by spaces, tabs, or commas. Lines starting with # are ignored.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: DESIGN ════════════════════════════════ -->
+  <div class="body" id="tab-design">
+    <div class="panel">
+      <div class="row">
+        <div style="min-width:140px">
+          <label>Active Design</label>
+          <select id="desSelect" onchange="selectDesign(this.value)"></select>
+        </div>
+        <div style="flex:1">
+          <label>Design Name</label>
+          <input id="desName" type="text" onchange="updateDesName(this.value)">
+        </div>
+        <button class="btn btn-c" style="margin-top:18px" onclick="addDesign()">+ New Design</button>
+      </div>
+    </div>
+    <div class="g2c">
+      <div class="panel">
+        <label>Incident Medium</label>
+        <select id="desIncident" onchange="updateDesField('incident',this.value)"></select>
+      </div>
+      <div class="panel">
+        <label>Substrate</label>
+        <select id="desSubstrate" onchange="updateDesField('substrate',this.value)"></select>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row" style="margin-bottom:10px">
+        <div class="panel-hdr" style="margin:0">Layer Stack (Incident → Substrate)</div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <span id="stackInfo" style="font-size:11px;color:var(--tx3)"></span>
+          <button class="btn btn-c btn-sm" onclick="addLayer()">+ Add Layer</button>
+        </div>
+      </div>
+      <div class="stack-label">▸ INCIDENT: <span id="incLabel" style="color:var(--acc)">—</span></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Material</th>
+            <th style="width:120px">Thickness (nm)</th>
+            <th style="width:90px">n @ 550nm</th>
+            <th style="width:80px">QWOT (×λ)</th>
+            <th style="width:90px">Actions</th>
+          </tr></thead>
+          <tbody id="layersTbl"></tbody>
+        </table>
+      </div>
+      <div class="stack-label" style="margin-top:4px">▸ SUBSTRATE: <span id="subLabel" style="color:var(--grn)">—</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: CALCULATE ═════════════════════════════ -->
+  <div class="body" id="tab-calculate">
+    <div class="g2c">
+      <div class="panel">
+        <div class="panel-hdr">Wavelength Range</div>
+        <div class="col">
+          <div class="row">
+            <div style="flex:1"><label>Start (nm)</label><input type="number" id="wl0" value="400" min="100" max="5000"></div>
+            <div style="flex:1"><label>End (nm)</label><input type="number" id="wl1" value="800" min="100" max="5000"></div>
+          </div>
+          <div><label>Number of Points</label><input type="number" id="wlPts" value="201" min="10" max="2001"></div>
+          <div class="hint" id="wlStep">Step: 2.00 nm per point</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">Polarization</div>
+        <div class="col" style="gap:4px" id="polRadios"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">Angles of Incidence</div>
+      <div class="angle-pill-wrap" id="anglePills"></div>
+      <div class="row" style="max-width:300px;gap:8px">
+        <input type="number" id="angInp" value="" min="0" max="89" step="1" placeholder="e.g. 45" style="width:120px" onkeydown="if(event.key==='Enter')addAngle()">
+        <button class="btn btn-c" onclick="addAngle()">+ Add Angle</button>
+      </div>
+      <div class="hint" style="margin-top:6px">Range: 0° (normal) to 89° (near-grazing). Press Enter to add.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">Stack Summary</div>
+      <div id="calcSummary" style="font-size:12px;color:var(--tx2)"></div>
+    </div>
+    <button class="btn-run" id="btnRun" onclick="runCalc()">▶&nbsp; Run Calculation</button>
+    <div class="progress" id="progressTxt"></div>
+  </div>
+
+  <!-- ═══ TAB: RESULTS ═══════════════════════════════ -->
+  <div class="body" id="tab-results">
+    <div id="noResults" class="no-res">
+      <div class="no-res-ico">◎</div>
+      <div style="font-size:14px;font-weight:700">No results yet</div>
+      <div style="font-size:12px">Configure your stack and run a calculation in Tab 03.</div>
+    </div>
+    <div id="resultsContent" style="display:none" class="col">
+      <div class="panel">
+        <div class="row" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.12em">Show Quantity</div>
+            <div class="row" style="gap:6px">
+              <button id="btnShowR" class="btn btn-c" onclick="toggleQ('R')">— Reflectance</button>
+              <button id="btnShowT" class="btn btn-c" onclick="toggleQ('T')">- - Transmittance</button>
+              <button id="btnShowA" class="btn btn-n" onclick="toggleQ('A')">·· Absorptance</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.12em">Angles</div>
+            <div class="row" style="gap:6px;flex-wrap:wrap" id="angleToggles"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.12em">Polarization</div>
+            <div class="row" style="gap:6px;flex-wrap:wrap" id="polToggles"></div>
+          </div>
+          <div style="margin-left:auto;font-size:11px;color:var(--tx3);align-self:flex-end" id="resInfo"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row" style="flex-wrap:wrap;gap:16px;align-items:flex-end">
+          <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;align-self:center">Graph Settings</div>
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:4px;letter-spacing:.08em">X — Wavelength (nm)</div>
+            <div class="row" style="gap:6px">
+              <div style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--tx3)">Min</span>
+                <input type="number" id="gWlMin" style="width:80px" min="100" max="5000" step="10" oninput="applyGraphSettings()">
+              </div>
+              <div style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--tx3)">Max</span>
+                <input type="number" id="gWlMax" style="width:80px" min="100" max="5000" step="10" oninput="applyGraphSettings()">
+              </div>
+            </div>
+          </div>
+          <div style="width:1px;height:32px;background:var(--bd);align-self:flex-end"></div>
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:4px;letter-spacing:.08em">Y — % Range</div>
+            <div class="row" style="gap:6px">
+              <div style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--tx3)">Min</span>
+                <input type="number" id="gPctMin" style="width:70px" min="-5" max="100" step="1" oninput="applyGraphSettings()">
+              </div>
+              <div style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--tx3)">Max</span>
+                <input type="number" id="gPctMax" style="width:70px" min="0" max="110" step="1" oninput="applyGraphSettings()">
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-n btn-sm" onclick="resetGraphSettings()" style="align-self:flex-end;padding:6px 12px">↺ Reset</button>
+        </div>
+        <div style="height:1px;background:var(--bd);margin:12px 0 10px"></div>
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.12em">T / R / A vs Wavelength (nm)</div>
+        <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">Summary — Mean Values Over Wavelength Range</div>
+        <div style="overflow-x:auto">
+          <table id="sumTable">
+            <thead><tr>
+              <th>Angle</th><th>Pol</th><th>Mean R (%)</th><th>Mean T (%)</th><th>Mean A (%)</th>
+              <th>Peak T @ λ</th><th>Peak R @ λ</th>
+            </tr></thead>
+            <tbody id="sumTbl"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// COMPLEX MATH
+// ═══════════════════════════════════════════════════════
+const cx={
+  add:([a,b],[c,d])=>[a+c,b+d],
+  sub:([a,b],[c,d])=>[a-c,b-d],
+  mul:([a,b],[c,d])=>[a*c-b*d,a*d+b*c],
+  div:([a,b],[c,d])=>{const n=c*c+d*d;return n<1e-30?[0,0]:[(a*c+b*d)/n,(b*c-a*d)/n];},
+  neg:([a,b])=>[-a,-b],
+  abs2:([a,b])=>a*a+b*b,
+  re:([a])=>a,
+  R:a=>[a,0],
+  sqrt:([a,b])=>{const r=Math.sqrt(a*a+b*b),s=b<0?-1:1;return[Math.sqrt(Math.max(0,(r+a)/2)),s*Math.sqrt(Math.max(0,(r-a)/2))];},
+  cos:([a,b])=>[Math.cos(a)*Math.cosh(b),-Math.sin(a)*Math.sinh(b)],
+  sin:([a,b])=>[Math.sin(a)*Math.cosh(b),Math.cos(a)*Math.sinh(b)],
+};
+function mm22(A,B){
+  const[a,b,c,d]=A,[e,f,g,h]=B;
+  return[
+    cx.add(cx.mul(a,e),cx.mul(b,g)),cx.add(cx.mul(a,f),cx.mul(b,h)),
+    cx.add(cx.mul(c,e),cx.mul(d,g)),cx.add(cx.mul(c,f),cx.mul(d,h))
+  ];
+}
+
+// ═══════════════════════════════════════════════════════
+// TRANSFER MATRIX METHOD
+// ═══════════════════════════════════════════════════════
+function calcTMM(layers,n0,ns,ks,deg,wl,pol){
+  const th=Math.min(deg,89.9)*Math.PI/180;
+  const s0=Math.sin(th),c0=Math.cos(th),sn=n0*s0;
+  const adm=(nh,ct)=>pol==='TE'?cx.mul(nh,ct):cx.div(nh,ct);
+  const e0=cx.R(pol==='TE'?n0*c0:n0/Math.max(c0,1e-8));
+  const nS=[ns,-ks];
+  let cS=cx.sqrt(cx.sub([1,0],cx.mul(cx.div(cx.R(sn),nS),cx.div(cx.R(sn),nS))));
+  if(cS[0]<0)cS=cx.neg(cS);
+  const eS=adm(nS,cS);
+  let M=[[1,0],[0,0],[0,0],[1,0]];
+  for(const{n,k,d}of layers){
+    if(!d||d<=0)continue;
+    const nh=[n,-k];
+    const sL=cx.div(cx.R(sn),nh);
+    let cL=cx.sqrt(cx.sub([1,0],cx.mul(sL,sL)));
+    if(cL[0]<0)cL=cx.neg(cL);
+    const eL=adm(nh,cL);
+    const dlt=cx.mul(cx.mul(nh,cL),cx.R(2*Math.PI*d/wl));
+    const cd=cx.cos(dlt),sd=cx.sin(dlt);
+    const NI=[0,-1];
+    const Li=[cd,cx.mul(NI,cx.div(sd,eL)),cx.mul(NI,cx.mul(eL,sd)),cd];
+    M=mm22(M,Li);
+  }
+  const[m00,m01,m10,m11]=M;
+  const B=cx.add(m00,cx.mul(m01,eS)),C=cx.add(m10,cx.mul(m11,eS));
+  const e0B=cx.mul(e0,B),den=cx.add(e0B,C);
+  const r=cx.div(cx.sub(e0B,C),den),t=cx.div(cx.mul([2,0],e0),den);
+  const R=Math.min(1,Math.max(0,cx.abs2(r)));
+  const re0=cx.re(e0);
+  const T=re0>1e-10?Math.min(1,Math.max(0,cx.re(eS)/re0*cx.abs2(t))):0;
+  return{R,T,A:Math.max(0,1-R-T)};
+}
+
+// ═══════════════════════════════════════════════════════
+// DISPERSION MODELS
+// ═══════════════════════════════════════════════════════
+const cau=(A,B,C,w)=>{const l=w/1e3;return A+B/(l*l)+C/(l*l*l*l);};
+const sell=(cf,w)=>{const l2=(w/1e3)**2;let s=1;for(let i=0;i<cf.length;i+=2)s+=cf[i]*l2/(l2-cf[i+1]);return Math.sqrt(Math.max(1,s));};
+function mkD(nf,kf,w0=300,w1=1200,n=121){
+  return Array.from({length:n},(_,i)=>{const w=w0+(w1-w0)*i/(n-1);return{wl:+w.toFixed(1),n:Math.max(1,nf(w)),k:Math.max(0,(kf?kf(w):0))};});
+}
+
+// ═══════════════════════════════════════════════════════
+// BUILT-IN MATERIALS
+// ═══════════════════════════════════════════════════════
+let materials=[
+  {id:'air',  name:'Air',       sym:'n=1.00',  locked:true, data:mkD(()=>1)},
+  {id:'sio2', name:'SiO₂',      sym:'n≈1.46',  locked:true, data:mkD(w=>cau(1.458,0.00354,0,w))},
+  {id:'tio2', name:'TiO₂',      sym:'n≈2.23',  locked:true, data:mkD(w=>cau(2.230,0.01990,0,w))},
+  {id:'mgf2', name:'MgF₂',      sym:'n≈1.38',  locked:true, data:mkD(w=>cau(1.378,0.00252,0,w))},
+  {id:'ta2o5',name:'Ta₂O₅',     sym:'n≈2.09',  locked:true, data:mkD(w=>cau(2.088,0.02640,0,w))},
+  {id:'bk7',  name:'BK7 Glass', sym:'n≈1.52',  locked:true, data:mkD(w=>sell([1.03961,0.006001,0.23179,0.020018,1.01047,103.561],w))},
+  {id:'zns',  name:'ZnS',       sym:'n≈2.29',  locked:true, data:mkD(w=>cau(2.2905,0.0754,0,w))},
+  {id:'al2o3',name:'Al₂O₃',     sym:'n≈1.65',  locked:true, data:mkD(w=>cau(1.648,0.00480,0,w))},
+  {id:'al',   name:'Aluminum',  sym:'metal',   locked:true, data:mkD(
+    w=>w<500?0.5+w/500*0.7:1.2+w/1200*0.8,
+    w=>w<400?4.2:4.2+(w-400)/800*2.8
+  )},
+];
+
+// ═══════════════════════════════════════════════════════
+// DESIGNS
+// ═══════════════════════════════════════════════════════
+let _uid=1;const uid=()=>'u'+(++_uid);
+let designs=[{
+  id:'d1',name:'AR Coating (3-layer)',incident:'air',substrate:'bk7',
+  layers:[{id:'l1',mat:'mgf2',d:97},{id:'l2',mat:'tio2',d:53},{id:'l3',mat:'sio2',d:92}]
+}];
+let currentDes='d1';
+
+// ═══════════════════════════════════════════════════════
+// CALCULATION STATE
+// ═══════════════════════════════════════════════════════
+let calcAngles=[0,15,30,45];
+let calcPols={TE:true,TM:false,Avg:false};
+let visPols={TE:true,TM:true,Avg:true};
+let lastResults=null;
+let showQ={R:true,T:true,A:false};
+let visAngles={};
+let mainChartObj=null;
+let matChartObj=null;
+let graphSettings={wlMin:null,wlMax:null,pctMin:0,pctMax:100};
+let selectedMat='sio2';
+let matEditing=false;
+
+const COLS=['#22d3ee','#4ade80','#fb923c','#f472b6','#a78bfa','#fde047','#34d399','#f87171'];
+
+// ═══════════════════════════════════════════════════════
+// INTERPOLATION
+// ═══════════════════════════════════════════════════════
+function interp(mat,wl){
+  const d=mat?.data;
+  if(!d?.length)return{n:1.5,k:0};
+  if(wl<=d[0].wl)return{n:d[0].n,k:d[0].k||0};
+  const L=d[d.length-1];if(wl>=L.wl)return{n:L.n,k:L.k||0};
+  let lo=0,hi=d.length-1;
+  while(hi-lo>1){const m=(lo+hi)>>1;d[m].wl<=wl?lo=m:hi=m;}
+  const t=(wl-d[lo].wl)/(d[hi].wl-d[lo].wl);
+  return{n:d[lo].n+t*(d[hi].n-d[lo].n),k:(d[lo].k||0)+t*((d[hi].k||0)-(d[lo].k||0))};
+}
+const getMat=id=>materials.find(m=>m.id===id)||materials[0];
+const getDes=()=>designs.find(d=>d.id===currentDes)||designs[0];
+const nAtRef=id=>{const{n}=interp(getMat(id),550);return n.toFixed(3);};
+const qwot=(id,d)=>{const{n}=interp(getMat(id),550);return (n*d/137.5).toFixed(2);};
+
+function parseCSV(txt){
+  const rows=txt.trim().split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));
+  const data=[];
+  for(const l of rows){
+    const p=l.trim().split(/[\s,;]+/);
+    const wl=parseFloat(p[0]),n=parseFloat(p[1]),k=parseFloat(p[2]||0);
+    if(!isNaN(wl)&&!isNaN(n)&&wl>0&&n>0)data.push({wl,n,k:Math.max(0,k)});
+  }
+  if(data.length<2)return null;
+  return data.sort((a,b)=>a.wl-b.wl);
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.body').forEach(b=>b.classList.remove('act'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));
+  document.getElementById('tab-'+id).classList.add('act');
+  document.querySelectorAll('.tab').forEach(t=>{
+    if(t.textContent.toLowerCase().includes(id.slice(0,4)))t.classList.add('act');
+  });
+  if(id==='design')renderDesignTab();
+  if(id==='calculate')renderCalcTab();
+  if(id==='results')renderResults();
+}
+
+// ═══════════════════════════════════════════════════════
+// MATERIALS TAB
+// ═══════════════════════════════════════════════════════
+function renderMatList(){
+  const el=document.getElementById('matList');
+  el.innerHTML=materials.map(m=>`
+    <div class="mat-item${m.id===selectedMat?' sel':''}" onclick="selectMat('${m.id}')">
+      <div class="mat-name">${m.name}${m.locked?'<span class="badge badge-dim" style="margin-left:6px">built-in</span>':''}</div>
+      <div class="mat-sym">${m.sym||'custom'}</div>
+    </div>`).join('');
+}
+
+function selectMat(id){
+  selectedMat=id;
+  matEditing=false;
+  renderMatList();
+  renderMatPanel();
+}
+
+function renderMatPanel(){
+  const m=getMat(selectedMat);
+  document.getElementById('matTitle').textContent=m.name;
+  document.getElementById('matLockedBadge').style.display=m.locked?'inline':'none';
+  document.getElementById('btnDelMat').style.display=m.locked?'none':'inline-block';
+  document.getElementById('nAt400').textContent=interp(m,400).n.toFixed(4);
+  document.getElementById('nAt550').textContent=interp(m,550).n.toFixed(4);
+  document.getElementById('nAt700').textContent=interp(m,700).n.toFixed(4);
+  renderMatChart(m);
+  if(matEditing){showMatEdit(m);}else{showMatView(m);}
+}
+
+function showMatView(m){
+  document.getElementById('matDataEdit').style.display='none';
+  document.getElementById('matDataView').style.display='block';
+  document.getElementById('btnEditMat').style.display='inline-block';
+  document.getElementById('btnEditMat').textContent=m.locked?'View Data':'Edit Data';
+  document.getElementById('btnSaveMat').style.display='none';
+  document.getElementById('btnCancelMat').style.display='none';
+  const step=Math.max(1,Math.floor(m.data.length/20));
+  document.getElementById('matDataView').innerHTML=`<div style="overflow-x:auto;max-height:180px;overflow-y:auto">
+    <table><thead><tr><th>λ (nm)</th><th>n</th><th>k</th></tr></thead><tbody>
+    ${m.data.filter((_,i)=>i%step===0).map(r=>`<tr>
+      <td class="mono">${r.wl.toFixed(0)}</td>
+      <td class="mono" style="color:var(--acc)">${r.n.toFixed(5)}</td>
+      <td class="mono" style="color:var(--org)">${(r.k||0).toFixed(5)}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function showMatEdit(m){
+  document.getElementById('matDataView').style.display='none';
+  document.getElementById('matDataEdit').style.display='block';
+  document.getElementById('btnEditMat').style.display='none';
+  document.getElementById('btnSaveMat').style.display='inline-block';
+  document.getElementById('btnCancelMat').style.display='inline-block';
+  document.getElementById('matEditName').value=m.name;
+  document.getElementById('matEditTxt').value=m.data.map(r=>`${r.wl.toFixed(1)}\t${r.n.toFixed(6)}\t${(r.k||0).toFixed(6)}`).join('\n');
+  document.getElementById('matEditErr').textContent='';
+}
+
+function toggleEditMat(){
+  const m=getMat(selectedMat);
+  if(m.locked){matEditing=true;showMatEdit(m);}
+  else{matEditing=!matEditing;if(matEditing)showMatEdit(m);else showMatView(m);}
+}
+function cancelEditMat(){matEditing=false;showMatView(getMat(selectedMat));}
+
+function saveMaterial(){
+  const txt=document.getElementById('matEditTxt').value;
+  const data=parseCSV(txt);
+  if(!data){document.getElementById('matEditErr').textContent='Invalid data. Need ≥2 rows: wavelength(nm)  n  k';return;}
+  const name=document.getElementById('matEditName').value.trim()||'Material';
+  const m=getMat(selectedMat);
+  if(m.locked){alert('Cannot save over built-in material. Duplicate it first.');return;}
+  m.name=name;m.data=data;m.sym='custom';
+  matEditing=false;
+  renderMatList();renderMatPanel();
+  refreshDesignSelects();
+}
+
+function addMaterial(){
+  const id=uid();
+  const tmpl='300\t1.500000\t0.000000\n400\t1.490000\t0.000000\n550\t1.480000\t0.000000\n700\t1.470000\t0.000000\n1200\t1.460000\t0.000000';
+  materials.push({id,name:'New Material',sym:'custom',locked:false,data:parseCSV(tmpl)||[]});
+  selectedMat=id;matEditing=true;
+  renderMatList();renderMatPanel();
+  refreshDesignSelects();
+}
+
+function dupMaterial(){
+  const m=getMat(selectedMat);
+  const id=uid();
+  materials.push({...m,id,name:m.name+' (copy)',locked:false,data:[...m.data]});
+  selectedMat=id;matEditing=!m.locked;
+  renderMatList();renderMatPanel();
+  refreshDesignSelects();
+}
+
+function deleteMaterial(){
+  const m=getMat(selectedMat);
+  if(m.locked){alert('Cannot delete built-in material.');return;}
+  if(!confirm('Delete '+m.name+'?'))return;
+  materials=materials.filter(x=>x.id!==selectedMat);
+  selectedMat='sio2';matEditing=false;
+  renderMatList();renderMatPanel();
+  refreshDesignSelects();
+}
+
+function renderMatChart(m){
+  const d=m.data,step=Math.max(1,Math.floor(d.length/80));
+  const pts=d.filter((_,i)=>i%step===0);
+  const hasK=pts.some(r=>r.k>0.0001);
+  const ctx=document.getElementById('matChart').getContext('2d');
+  if(matChartObj)matChartObj.destroy();
+  matChartObj=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:pts.map(r=>r.wl.toFixed(0)),
+      datasets:[
+        {label:'n',data:pts.map(r=>r.n),borderColor:'#22d3ee',borderWidth:2,pointRadius:0,tension:.3},
+        ...(hasK?[{label:'k',data:pts.map(r=>r.k||0),borderColor:'#fb923c',borderWidth:1.5,borderDash:[4,3],pointRadius:0,tension:.3}]:[])
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      scales:{
+        x:{ticks:{color:'#4a7090',font:{size:9},maxTicksLimit:8},grid:{color:'#1a2e4a'},title:{display:true,text:'nm',color:'#4a7090',font:{size:9}}},
+        y:{ticks:{color:'#4a7090',font:{size:9}},grid:{color:'#1a2e4a'}}
+      },
+      plugins:{legend:{labels:{color:'#8ab8d8',font:{size:10},boxWidth:20}}}
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DESIGN TAB
+// ═══════════════════════════════════════════════════════
+function refreshDesignSelects(){
+  const opts=materials.map(m=>`<option value="${m.id}">${m.name} (n≈${nAtRef(m.id)})</option>`).join('');
+  ['desIncident','desSubstrate'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=opts;
+  });
+  // also refresh layer material selects
+  renderLayersTbl();
+}
+
+function renderDesignTab(){
+  const des=getDes();
+  // design selector
+  const ds=document.getElementById('desSelect');
+  ds.innerHTML=designs.map(d=>`<option value="${d.id}"${d.id===currentDes?' selected':''}>${d.name}</option>`).join('');
+  document.getElementById('desName').value=des.name;
+  const opts=materials.map(m=>`<option value="${m.id}"${m.id===des.incident?' selected':''}>${m.name} (n≈${nAtRef(m.id)})</option>`).join('');
+  const opts2=materials.map(m=>`<option value="${m.id}"${m.id===des.substrate?' selected':''}>${m.name} (n≈${nAtRef(m.id)})</option>`).join('');
+  document.getElementById('desIncident').innerHTML=opts;
+  document.getElementById('desSubstrate').innerHTML=opts2;
+  renderLayersTbl();
+  updateHdrInfo();
+}
+
+function renderLayersTbl(){
+  const des=getDes();
+  const matOpts=materials.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  const totalOT=des.layers.reduce((s,l)=>{const{n}=interp(getMat(l.mat),550);return s+n*l.d;},0);
+  document.getElementById('stackInfo').textContent=des.layers.length+' layers · OT: '+totalOT.toFixed(0)+'nm';
+  document.getElementById('incLabel').textContent=getMat(des.incident).name+' (n≈'+nAtRef(des.incident)+')';
+  document.getElementById('subLabel').textContent=getMat(des.substrate).name+' (n≈'+nAtRef(des.substrate)+')';
+  document.getElementById('layersTbl').innerHTML=des.layers.map((l,i)=>{
+    const col=COLS[i%COLS.length];
+    return`<tr>
+      <td><span class="pill" style="background:${col}25;color:${col};border:1px solid ${col}50">${i+1}</span></td>
+      <td><select style="font-size:12px" onchange="setLayer('${l.id}','mat',this.value)">${materials.map(m=>`<option value="${m.id}"${m.id===l.mat?' selected':''}>${m.name}</option>`).join('')}</select></td>
+      <td><input type="number" value="${l.d}" min="0" max="10000" step="1" style="text-align:right;font-family:'Courier New',monospace" onchange="setLayer('${l.id}','d',parseFloat(this.value)||0)"></td>
+      <td class="mono" style="color:var(--acc)">${nAtRef(l.mat)}</td>
+      <td style="color:var(--grn);font-family:'Courier New',monospace;font-size:12px">${qwot(l.mat,l.d)}λ</td>
+      <td>
+        <div class="row" style="gap:3px">
+          <button class="btn btn-n btn-sm" style="padding:2px 6px" onclick="moveLayer('${l.id}',-1)">↑</button>
+          <button class="btn btn-n btn-sm" style="padding:2px 6px" onclick="moveLayer('${l.id}',1)">↓</button>
+          <button class="btn btn-r btn-sm" style="padding:2px 6px" onclick="deleteLayer('${l.id}')">×</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function selectDesign(id){currentDes=id;renderDesignTab();}
+function updateDesName(v){getDes().name=v;document.getElementById('desSelect').options[designs.findIndex(d=>d.id===currentDes)].text=v;updateHdrInfo();}
+function updateDesField(f,v){getDes()[f]=v;renderLayersTbl();}
+function addLayer(){getDes().layers.push({id:uid(),mat:'sio2',d:100});renderLayersTbl();}
+function deleteLayer(id){getDes().layers=getDes().layers.filter(l=>l.id!==id);renderLayersTbl();}
+function setLayer(id,f,v){const l=getDes().layers.find(x=>x.id===id);if(l){l[f]=v;renderLayersTbl();}}
+function moveLayer(id,dir){
+  const ls=getDes().layers,i=ls.findIndex(l=>l.id===id),j=i+dir;
+  if(j>=0&&j<ls.length){[ls[i],ls[j]]=[ls[j],ls[i]];renderLayersTbl();}
+}
+function addDesign(){
+  const id=uid();
+  designs.push({id,name:'New Design',incident:'air',substrate:'bk7',layers:[{id:uid(),mat:'sio2',d:100}]});
+  currentDes=id;renderDesignTab();
+}
+function updateHdrInfo(){
+  const des=getDes();
+  document.getElementById('hdrInfo').textContent='Active: '+des.name+' · '+des.layers.length+' layers';
+}
+
+// ═══════════════════════════════════════════════════════
+// CALCULATE TAB
+// ═══════════════════════════════════════════════════════
+function renderCalcTab(){
+  // Wavelength step hint
+  updateWlHint();
+  document.getElementById('wl0').oninput=document.getElementById('wl1').oninput=document.getElementById('wlPts').oninput=updateWlHint;
+
+  // Polarization checkboxes
+  const polDiv=document.getElementById('polRadios');
+  polDiv.innerHTML=[
+    {v:'TE', l:'TE (s-polarization)', s:'E-field ⊥ to plane of incidence'},
+    {v:'TM', l:'TM (p-polarization)', s:'E-field ∥ to plane of incidence'},
+    {v:'Avg',l:'Average (TE+TM)/2',   s:'Unpolarized light'}
+  ].map(p=>{
+    const on=calcPols[p.v];
+    return`<label class="row" style="cursor:pointer;gap:10px;background:${on?'rgba(34,211,238,.07)':'transparent'};padding:7px 10px;border-radius:5px;border:1px solid ${on?'rgba(34,211,238,.28)':'transparent'};transition:.15s" onclick="toggleCalcPol('${p.v}')">
+      <div style="width:16px;height:16px;border-radius:4px;border:1.5px solid ${on?'var(--acc)':'var(--bd2)'};background:${on?'var(--acc)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s">
+        ${on?'<span style="color:var(--bg0);font-size:11px;font-weight:900;line-height:1">✓</span>':''}
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:${on?'var(--acc)':'var(--tx1)'}">${p.l}</div>
+        <div style="font-size:10px;color:var(--tx3)">${p.s}</div>
+      </div>
+    </label>`;
+  }).join('');
+
+  renderAnglePills();
+  renderCalcSummary();
+}
+
+function updateWlHint(){
+  const w0=parseFloat(document.getElementById('wl0').value)||400;
+  const w1=parseFloat(document.getElementById('wl1').value)||800;
+  const pts=parseInt(document.getElementById('wlPts').value)||201;
+  document.getElementById('wlStep').textContent='Step: '+((w1-w0)/(pts-1)).toFixed(2)+' nm per point';
+}
+
+function renderAnglePills(){
+  const w=document.getElementById('anglePills');
+  w.innerHTML=calcAngles.map((a,i)=>`
+    <div class="tag">
+      <span class="dot" style="background:${COLS[i%COLS.length]}"></span>
+      ${a}°
+      <button class="tag-del" onclick="removeAngle(${a})">×</button>
+    </div>`).join('');
+}
+
+function addAngle(){
+  const v=parseFloat(document.getElementById('angInp').value);
+  if(isNaN(v)||v<0||v>89)return;
+  if(calcAngles.includes(v))return;
+  calcAngles=[...calcAngles,v].sort((a,b)=>a-b);
+  document.getElementById('angInp').value='';
+  renderAnglePills();renderCalcSummary();
+}
+
+function removeAngle(a){calcAngles=calcAngles.filter(x=>x!==a);renderAnglePills();renderCalcSummary();}
+
+function toggleCalcPol(p){
+  calcPols[p]=!calcPols[p];
+  // ensure at least one is checked
+  if(!Object.values(calcPols).some(Boolean))calcPols[p]=true;
+  renderCalcTab();
+}
+
+function renderCalcSummary(){
+  const des=getDes();
+  const selPols=Object.entries(calcPols).filter(([,v])=>v).map(([k])=>k).join(', ');
+  document.getElementById('calcSummary').innerHTML=`
+    <span style="color:var(--tx3)">Design:</span> <span style="color:var(--tx0);font-weight:700">${des.name}</span> &nbsp;|&nbsp;
+    <span style="color:var(--tx3)">Incident:</span> <span style="color:var(--acc)">${getMat(des.incident).name}</span> &nbsp;|&nbsp;
+    <span style="color:var(--tx3)">Layers:</span> <span style="color:var(--tx0)">${des.layers.length}</span> &nbsp;|&nbsp;
+    <span style="color:var(--tx3)">Substrate:</span> <span style="color:var(--grn)">${getMat(des.substrate).name}</span> &nbsp;|&nbsp;
+    <span style="color:var(--tx3)">Angles:</span> <span style="color:var(--yel)">${calcAngles.join('°, ')}°</span> &nbsp;|&nbsp;
+    <span style="color:var(--tx3)">Polarizations:</span> <span style="color:var(--pnk)">${selPols}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RUN CALCULATION
+// ═══════════════════════════════════════════════════════
+function runCalc(){
+  const des=getDes();
+  if(!des.layers.length){alert('Add at least one layer.');return;}
+  if(!calcAngles.length){alert('Add at least one angle.');return;}
+  const selPols=Object.entries(calcPols).filter(([,v])=>v).map(([k])=>k);
+  if(!selPols.length){alert('Select at least one polarization.');return;}
+  const w0=parseFloat(document.getElementById('wl0').value)||400;
+  const w1=parseFloat(document.getElementById('wl1').value)||800;
+  const pts=parseInt(document.getElementById('wlPts').value)||201;
+  if(w0>=w1){alert('Start wavelength must be less than end.');return;}
+
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('progressTxt').textContent='⟳ Computing '+pts+' wavelengths × '+calcAngles.length+' angles × '+selPols.length+' polarizations...';
+
+  setTimeout(()=>{
+    try{
+      const wls=Array.from({length:pts},(_,i)=>w0+(w1-w0)*i/(pts-1));
+      const iM=getMat(des.incident),sM=getMat(des.substrate);
+      const ar=[];
+      for(const ang of calcAngles){
+        for(const pol of selPols){
+          const data=wls.map(wl=>{
+            const lk=des.layers.map(l=>{const{n,k}=interp(getMat(l.mat),wl);return{n,k,d:l.d};});
+            const{n:n0}=interp(iM,wl);
+            const{n:ns,k:ks}=interp(sM,wl);
+            if(pol==='Avg'){
+              const te=calcTMM(lk,n0,ns,ks,ang,wl,'TE');
+              const tm=calcTMM(lk,n0,ns,ks,ang,wl,'TM');
+              return{wl,R:(te.R+tm.R)/2,T:(te.T+tm.T)/2,A:(te.A+tm.A)/2};
+            }
+            return{wl,...calcTMM(lk,n0,ns,ks,ang,wl,pol)};
+          });
+          ar.push({angle:ang,pol,data});
+        }
+      }
+      lastResults={wls,ar,pols:selPols,desName:des.name,pts};
+      visAngles={};calcAngles.forEach(a=>visAngles[a]=true);
+      visPols={TE:true,TM:true,Avg:true};
+      graphSettings={wlMin:null,wlMax:null,pctMin:0,pctMax:100};
+      document.getElementById('progressTxt').textContent='✓ Done — '+pts+' pts × '+calcAngles.length+' angles × '+selPols.length+' pol computed.';
+      switchTab('results');
+    }catch(e){
+      document.getElementById('progressTxt').textContent='✗ Error: '+e.message;
+      console.error(e);
+    }
+    document.getElementById('btnRun').disabled=false;
+  },30);
+}
+
+// ═══════════════════════════════════════════════════════
+// RESULTS TAB
+// ═══════════════════════════════════════════════════════
+function toggleQ(q){
+  showQ[q]=!showQ[q];
+  const btn=document.getElementById('btnShow'+q);
+  btn.className='btn '+(showQ[q]?'btn-c':'btn-n');
+  updateMainChart();
+}
+
+function renderResults(){
+  if(!lastResults){
+    document.getElementById('noResults').style.display='flex';
+    document.getElementById('resultsContent').style.display='none';
+    return;
+  }
+  document.getElementById('noResults').style.display='none';
+  document.getElementById('resultsContent').style.display='flex';
+
+  const{desName,pols,pts}=lastResults;
+  document.getElementById('resInfo').textContent=desName+' · '+pols.join('+')+' · '+pts+' pts';
+
+  // Seed graph settings
+  const wls=lastResults.wls;
+  const w0=wls[0],w1=wls[wls.length-1];
+  if(graphSettings.wlMin===null){
+    graphSettings={wlMin:w0,wlMax:w1,pctMin:0,pctMax:100};
+  }
+  document.getElementById('gWlMin').value=graphSettings.wlMin.toFixed(0);
+  document.getElementById('gWlMax').value=graphSettings.wlMax.toFixed(0);
+  document.getElementById('gPctMin').value=graphSettings.pctMin;
+  document.getElementById('gPctMax').value=graphSettings.pctMax;
+
+  // Angle toggles (color = angle index)
+  const uniqueAngles=[...new Set(lastResults.ar.map(r=>r.angle))];
+  const at=document.getElementById('angleToggles');
+  at.innerHTML=uniqueAngles.map((angle,i)=>{
+    const col=COLS[i%COLS.length];
+    const on=visAngles[angle]!==false;
+    return`<button onclick="toggleAngle(${angle})" class="btn"
+      style="border-color:${col}80;color:${on?col:'var(--tx3)'};background:${on?col+'18':'var(--bg3)'}">${angle}°</button>`;
+  }).join('');
+
+  // Polarization toggles
+  const POL_STYLE={TE:{lw:'2.5px solid',label:'TE'},TM:{lw:'1.5px solid',label:'TM'},Avg:{lw:'2px dashed',label:'Avg'}};
+  const pt=document.getElementById('polToggles');
+  pt.innerHTML=pols.map(pol=>{
+    const on=visPols[pol]!==false;
+    return`<button onclick="togglePol('${pol}')" class="btn"
+      style="border-color:rgba(244,114,182,${on?'.7':'.25'});color:${on?'var(--pnk)':'var(--tx3)'};background:${on?'rgba(244,114,182,.12)':'var(--bg3)'}">
+      <span style="display:inline-block;width:18px;border-top:${POL_STYLE[pol].lw} currentColor;vertical-align:middle;margin-right:5px"></span>${pol}
+    </button>`;
+  }).join('');
+
+  buildMainChart();
+  buildSummaryTable();
+}
+
+function toggleAngle(a){visAngles[a]=!visAngles[a];renderResults();}
+function togglePol(p){
+  visPols[p]=!visPols[p];
+  // ensure at least one visible
+  const anyVis=lastResults.pols.some(pol=>visPols[pol]!==false);
+  if(!anyVis)visPols[p]=true;
+  renderResults();
+}
+
+function buildMainChart(){
+  const{wls,ar}=lastResults;
+  const gs=graphSettings;
+  const wlMin=gs.wlMin??wls[0];
+  const wlMax=gs.wlMax??wls[wls.length-1];
+  const pctMin=gs.pctMin??0;
+  const pctMax=gs.pctMax??100;
+
+  const indices=[];
+  wls.forEach((w,i)=>{if(w>=wlMin&&w<=wlMax)indices.push(i);});
+  const filtLabels=indices.map(i=>wls[i].toFixed(1));
+
+  // angle index map for consistent colors
+  const uniqueAngles=[...new Set(ar.map(r=>r.angle))];
+  const angleIdx=Object.fromEntries(uniqueAngles.map((a,i)=>[a,i]));
+
+  // Encoding: angle→color, pol→line width, quantity→dash
+  const QDASH={R:[],T:[6,4],A:[2,3]};
+  const PWIDTH={TE:2.5,TM:1.5,Avg:1.8};
+  const PLINEDASH={TE:[],TM:[4,3],Avg:[8,3]};
+
+  const datasets=[];
+  ar.forEach(({angle,pol,data})=>{
+    if(visAngles[angle]===false)return;
+    if(visPols[pol]===false)return;
+    const col=COLS[angleIdx[angle]%COLS.length];
+    ['R','T','A'].forEach(q=>{
+      if(!showQ[q])return;
+      // Combine pol dash and quantity dash: interleave patterns
+      const qd=QDASH[q],pd=PLINEDASH[pol];
+      const dash=qd.length?qd:(pd.length?pd:[]);
+      datasets.push({
+        label:`${q} ${pol} ${angle}°`,
+        data:indices.map(i=>+(data[i][q]*100).toFixed(3)),
+        borderColor:col,
+        borderWidth:PWIDTH[pol],
+        borderDash:dash,
+        pointRadius:0,tension:.2
+      });
+    });
+  });
+
+  const ctx=document.getElementById('mainChart').getContext('2d');
+  if(mainChartObj)mainChartObj.destroy();
+  mainChartObj=new Chart(ctx,{
+    type:'line',
+    data:{labels:filtLabels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#4a7090',font:{size:9},maxTicksLimit:10},grid:{color:'#1a2e4a'},
+           title:{display:true,text:'Wavelength (nm)',color:'#4a7090',font:{size:10}}},
+        y:{min:pctMin,max:pctMax,
+           ticks:{color:'#4a7090',font:{size:9},callback:v=>v+'%',stepSize:Math.max(1,Math.round((pctMax-pctMin)/10))},
+           grid:{color:'#1a2e4a'},
+           title:{display:true,text:'(%)',color:'#4a7090',font:{size:10}}}
+      },
+      plugins:{
+        legend:{labels:{color:'#8ab8d8',font:{size:10},boxWidth:24,padding:8,
+          filter:(item)=>item.text!==undefined}},
+        tooltip:{backgroundColor:'#0c1829',borderColor:'#1a2e4a',borderWidth:1,
+          titleColor:'#8ab8d8',bodyColor:'#c4d8f0',
+          callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`}}
+      }
+    }
+  });
+}
+
+function updateMainChart(){if(lastResults)buildMainChart();}
+
+function applyGraphSettings(){
+  const wlMin=parseFloat(document.getElementById('gWlMin').value);
+  const wlMax=parseFloat(document.getElementById('gWlMax').value);
+  const pctMin=parseFloat(document.getElementById('gPctMin').value);
+  const pctMax=parseFloat(document.getElementById('gPctMax').value);
+  graphSettings={
+    wlMin:isNaN(wlMin)?null:wlMin,
+    wlMax:isNaN(wlMax)?null:wlMax,
+    pctMin:isNaN(pctMin)?0:pctMin,
+    pctMax:isNaN(pctMax)?100:pctMax
+  };
+  updateMainChart();
+}
+
+function resetGraphSettings(){
+  if(!lastResults)return;
+  const wls=lastResults.wls;
+  const w0=wls[0],w1=wls[wls.length-1];
+  graphSettings={wlMin:w0,wlMax:w1,pctMin:0,pctMax:100};
+  document.getElementById('gWlMin').value=w0.toFixed(0);
+  document.getElementById('gWlMax').value=w1.toFixed(0);
+  document.getElementById('gPctMin').value=0;
+  document.getElementById('gPctMax').value=100;
+  updateMainChart();
+}
+
+function buildSummaryTable(){
+  const{ar}=lastResults;
+  const uniqueAngles=[...new Set(ar.map(r=>r.angle))];
+  const angleIdx=Object.fromEntries(uniqueAngles.map((a,i)=>[a,i]));
+  document.getElementById('sumTbl').innerHTML=ar.map(({angle,pol,data})=>{
+    const col=COLS[angleIdx[angle]%COLS.length];
+    const mr=data.reduce((s,r)=>s+r.R,0)/data.length*100;
+    const mt=data.reduce((s,r)=>s+r.T,0)/data.length*100;
+    const ma=data.reduce((s,r)=>s+r.A,0)/data.length*100;
+    const maxT=data.reduce((m,r)=>r.T>m.T?r:m,data[0]);
+    const maxR=data.reduce((m,r)=>r.R>m.R?r:m,data[0]);
+    return`<tr>
+      <td><span class="badge" style="background:${col}20;color:${col};border:1px solid ${col}50">${angle}°</span></td>
+      <td><span class="badge" style="background:rgba(244,114,182,.15);color:var(--pnk);border:1px solid rgba(244,114,182,.3)">${pol}</span></td>
+      <td class="mono" style="color:var(--red)">${mr.toFixed(1)}</td>
+      <td class="mono" style="color:var(--acc)">${mt.toFixed(1)}</td>
+      <td class="mono" style="color:var(--org)">${ma.toFixed(1)}</td>
+      <td class="mono" style="color:var(--grn)">${(maxT.T*100).toFixed(1)}% @ ${maxT.wl.toFixed(0)}nm</td>
+      <td class="mono" style="color:var(--red)">${(maxR.R*100).toFixed(1)}% @ ${maxR.wl.toFixed(0)}nm</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+(function init(){
+  renderMatList();
+  renderMatPanel();
+  refreshDesignSelects();
+  updateHdrInfo();
+  // default calc tab state
+  document.getElementById('wl0').value=400;
+  document.getElementById('wl1').value=800;
+  document.getElementById('wlPts').value=201;
+})();
+</script>
+</body>
+</html>
